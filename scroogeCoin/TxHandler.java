@@ -1,14 +1,15 @@
 import java.util.ArrayList;
 
 public class TxHandler {
-
+    
+    private UTXOPool utxoPool;
     /**
      * Creates a public ledger whose current UTXOPool (collection of unspent transaction outputs) is
      * {@code utxoPool}. This should make a copy of utxoPool by using the UTXOPool(UTXOPool uPool)
      * constructor.
      */
     public TxHandler(UTXOPool utxoPool) {
-        this.uxtoPool = new UXTOPool(utxoPool);
+        this.utxoPool = new UTXOPool(utxoPool);
     }
 
     /**
@@ -21,25 +22,24 @@ public class TxHandler {
      *     values; and false otherwise.
      */
     public boolean isValidTx(Transaction tx) {
-        public ArrayList<Transaction.Input> inputs = new ArrayList<Transaction.Input>(tx.getInputs());
-        public ArrayList<byte[]> claimedTxHashs = new ArrayList<byte[]>();
-        public double totalInputValue = 0;
-        for ( Transaction.Input input : inputs) {
-            public byte[] inputHash = input.prevTxHash;
-            public int index = input.outputIndex;
+        ArrayList<byte[]> claimedTxHashs = new ArrayList<byte[]>();
+        double totalInputValue = 0;
+        for (int i = 0; i < tx.numInputs(); i++) {
+            Transaction.Input input = tx.getInput(i);
+            UTXO claimedUtxo = new UTXO(input.prevTxHash, input.outputIndex);
+            Transaction.Output claimedOutput = utxoPool.getTxOutput(claimedUtxo);
+            byte[] inputHash = input.prevTxHash;
             
             //test 1
-            utxo claimedUtxo = new UTXO(inputHash, index);
             if(!utxoPool.contains(claimedUtxo)) {
                 return false;
             }
             //test 2
-            Transaction.Output claimedOutput = utxoPool.getTxOutput(claimedUtxo);
-            if(!claimedOutput || !verifySignature(claimedOutput.address,getRawDataToSign(index),input.signature)) {
+            if (!Crypto.verifySignature(claimedOutput.address, tx.getRawDataToSign(i), input.signature)){
                 return false;
             }
             //test 3
-            if(claimedTxHashs.contains(inputHash){
+            if(claimedTxHashs.contains(inputHash)){
                 return false;
             }
             claimedTxHashs.add(inputHash);
@@ -48,17 +48,17 @@ public class TxHandler {
             
         }
         //test 4
-        public ArrayList<Transaction.Output> outputs = new ArrayList<Transaction.Output>(tx.getOutputs());
-        public double totalOutputValue = 0;
+         ArrayList<Transaction.Output> outputs = new ArrayList<Transaction.Output>(tx.getOutputs());
+         double totalOutputValue = 0;
         for( Transaction.Output output : outputs) {
-            public double value = output.value;
+             double value = output.value;
             if(value < 0) {
                 return false;
             }
             totalOutputValue += value;
         }
         //test 5
-        if(!totalInputValue >= totalOutputValue){
+        if(!(totalInputValue >= totalOutputValue)){
             return false;
         }
         return true;
@@ -70,18 +70,18 @@ public class TxHandler {
      * updating the current UTXO pool as appropriate.
      */
     public Transaction[] handleTxs(Transaction[] possibleTxs) {
-        public ArrayList<Transaction> fTxs = new ArrayList<Transaction>();
+         ArrayList<Transaction> fTxs = new ArrayList<Transaction>();
         for(Transaction tx : possibleTxs) {
             if(isValidTx(tx)) {
                 fTxs.add(tx);
-                public ArrayList<Transaction.Input> inputs = tx.getInputs();
-                public ArrayList<UTXO> spentUtxos = new ArrayList<UTXO>();
+                ArrayList<Transaction.Input> inputs = tx.getInputs();
+                ArrayList<UTXO> spentUtxos = new ArrayList<UTXO>();
                 for(Transaction.Input input : inputs) {
-                    public UTXO toAdd = new UTXO(input.prevTxHash, input.outputIndex);
+                     UTXO toAdd = new UTXO(input.prevTxHash, input.outputIndex);
                     spentUtxos.add(toAdd);
                 }
                 for(UTXO spentUtxo : spentUtxos){
-                    uxtoPool.remove(spentUtxo);
+                    utxoPool.removeUTXO(spentUtxo);
                 }
             }
         }
