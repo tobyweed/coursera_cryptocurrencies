@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 public class TxHandler {
 
     /**
@@ -19,22 +21,47 @@ public class TxHandler {
      *     values; and false otherwise.
      */
     public boolean isValidTx(Transaction tx) {
-        // test #1
-        public boolean isInPool = false;
-        public ArrayList<Input> inputs = new ArrayList<Input>(tx.getInputs());
-        public ArrayList<UTXO> utxos = new ArrayList<UXTO>(uxtoPool.getAllUTXO());
-        for ( Input input : inputs) {
+        public ArrayList<Transaction.Input> inputs = new ArrayList<Transaction.Input>(tx.getInputs());
+        public ArrayList<byte[]> claimedTxHashs = new ArrayList<byte[]>();
+        public double totalInputValue = 0;
+        for ( Transaction.Input input : inputs) {
             public byte[] inputHash = input.prevTxHash;
-            for ( UTXO uxto : utxos ) {
-                if(utxo.getTxHash() == inputHash) {
-                    isInPool = true;
-                }
+            public int index = input.outputIndex;
+            
+            //test 1
+            utxo claimedUtxo = new UTXO(inputHash, index);
+            if(!utxoPool.contains(claimedUtxo)) {
+                return false;
             }
+            //test 2
+            Transaction.Output claimedOutput = utxoPool.getTxOutput(claimedUtxo);
+            if(!claimedOutput || !verifySignature(claimedOutput.address,getRawDataToSign(index),input.signature)) {
+                return false;
+            }
+            //test 3
+            if(claimedTxHashs.contains(inputHash){
+                return false;
+            }
+            claimedTxHashs.add(inputHash);
+            //test 5
+            totalInputValue += claimedOutput.value;
+            
         }
-
-        //test #2
-
-
+        //test 4
+        public ArrayList<Transaction.Output> outputs = new ArrayList<Transaction.Output>(tx.getOutputs());
+        public double totalOutputValue = 0;
+        for( Transaction.Output output : outputs) {
+            public double value = output.value;
+            if(value < 0) {
+                return false;
+            }
+            totalOutputValue += value;
+        }
+        //test 5
+        if(!totalInputValue >= totalOutputValue){
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -43,7 +70,23 @@ public class TxHandler {
      * updating the current UTXO pool as appropriate.
      */
     public Transaction[] handleTxs(Transaction[] possibleTxs) {
-        // IMPLEMENT THIS
+        public ArrayList<Transaction> fTxs = new ArrayList<Transaction>();
+        for(Transaction tx : possibleTxs) {
+            if(isValidTx(tx)) {
+                fTxs.add(tx);
+                public ArrayList<Transaction.Input> inputs = tx.getInputs();
+                public ArrayList<UTXO> spentUtxos = new ArrayList<UTXO>();
+                for(Transaction.Input input : inputs) {
+                    public UTXO toAdd = new UTXO(input.prevTxHash, input.outputIndex);
+                    spentUtxos.add(toAdd);
+                }
+                for(UTXO spentUtxo : spentUtxos){
+                    uxtoPool.remove(spentUtxo);
+                }
+            }
+        }
+        Transaction[] rTxs = fTxs.toArray(new Transaction[fTxs.size()]);
+        return rTxs;
     }
 
 }
